@@ -5,8 +5,10 @@
  * opens), appends one use record and heartbeats it while the page is alive.
  * `pagehide`, `beforeunload`, and the plugin cleanup close the record; a
  * record left open by a crash or forced quit is closed from its last heartbeat
- * on the next boot. The sidebar panellist entry selects the `main` page that
- * shows the live use, the running total, and the grouped history.
+ * on the next boot. Reopening within CONTINUITY_GAP_MS of the previous close
+ * reopens that record instead of appending a new one, so short restarts read
+ * as one continuous use. The sidebar panellist entry selects the `main` page
+ * that shows the live use, the running total, and the grouped history.
  */
 window.__ModuleLoader__.load({
   id: '@local/dsh-usage-timer',
@@ -18,13 +20,16 @@ window.__ModuleLoader__.load({
     const PANEL_ID = 'usage-timer';
     const STORAGE_KEY = 'dsh-usage-timer.v1';
     const HEARTBEAT_MS = 5000;
+    // Quitting and reopening inside this window continues one use instead of
+    // counting a new one; the short gap is included in that use.
+    const CONTINUITY_GAP_MS = 3 * 60 * 1000;
     const MAX_SESSIONS = 2000;
     const DAY_MS = 86400000;
 
     const zh = {
       panel: '使用计时',
       title: '使用计时',
-      subtitle: '打开 DSH 时自动开始计时，关闭时停止，并记录每次使用时长与累计时长。',
+      subtitle: '打开 DSH 时自动开始计时，关闭时停止；3 分钟内重新打开会继续同一次计时。',
       current: '本次使用',
       total: '累计使用',
       sessions: '打开次数',
@@ -47,7 +52,7 @@ window.__ModuleLoader__.load({
     const en = {
       panel: 'Usage timer',
       title: 'Usage timer',
-      subtitle: 'Starts timing when DSH opens, stops when it closes, and records each use plus the running total.',
+      subtitle: 'Starts timing when DSH opens and stops when it closes; reopening within 3 minutes continues the same use.',
       current: 'This use',
       total: 'Total time',
       sessions: 'Opens',
@@ -128,17 +133,43 @@ window.__ModuleLoader__.load({
     function startTracking(ctx) {
       ctx.effect(() => {
         const now = Date.now();
-        const data = readData();
-        // A record still open belongs to a previous run that never closed it.
-        for (const session of data.sessions) {
-          if (session.end != null) continue;
+        const sessions = readData().sessions
+          .slice()
+          .sort((left, right) => left.start - right.start);
+        const closeAt = (session) => {
           const lastSeen = Number.isFinite(session.lastSeen) ? session.lastSeen : session.start;
           session.end = Math.max(session.start, lastSeen);
           session.lastSeen = session.end;
+        };
+
+        // A quick restart continues the newest use instead of opening a new
+        // one: reopen a just-closed record, or keep an interrupted one open.
+        const last = sessions[sessions.length - 1];
+        let own;
+        if (last !== undefined) {
+          const lastSeen = Number.isFinite(last.lastSeen) ? last.lastSeen : last.start;
+          if (last.end == null) {
+            if (now - lastSeen <= CONTINUITY_GAP_MS) own = last;
+            else closeAt(last);
+          } else if (now - last.end <= CONTINUITY_GAP_MS) {
+            last.end = null;
+            own = last;
+          }
         }
-        const own = { id: makeId(), start: now, lastSeen: now, end: null };
-        data.sessions.push(own);
-        writeData(data.sessions);
+
+        // Every other record still marked open belongs to a run that never
+        // closed it; close it from its last heartbeat.
+        for (const session of sessions) {
+          if (session !== own && session.end == null) closeAt(session);
+        }
+
+        if (own === undefined) {
+          own = { id: makeId(), start: now, lastSeen: now, end: null };
+          sessions.push(own);
+        } else {
+          own.lastSeen = now;
+        }
+        writeData(sessions);
 
         const beat = () => {
           if (own.end != null) return;

@@ -1,10 +1,8 @@
 {
   "name": "@local/dsh-usage-timer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Times how long DSH stays open: each use is recorded and summed in a sidebar page.",
-  "license": "MIT",
-  "keywords": ["dsh", "dsh-plugin", "deepseek-harness", "timer", "usage", "sidebar"],
+  "description": "Times how long DSH stays open: each use is recorded and summed in a sidebar page; quick restarts stay one use.",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -12,7 +10,7 @@
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
-  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg", "README.md", "LICENSE"],
+  "files": ["index.js", "client.js", "cordis.patch.yml", "locale/*.json", "icon.svg"],
   "dsh": {
     "bundle": { "patch": "./cordis.patch.yml" },
     "client": {

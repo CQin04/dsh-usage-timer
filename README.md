@@ -4,13 +4,14 @@
   <img src="icon.svg" width="96" height="96" alt="Usage timer icon" />
 </p>
 
-一个 DeepSeek Harness（DSH）插件：**打开 DSH 时自动开始计时，关闭时停止**，记录每一次使用时长，并在左侧栏页面汇总累计时长。
+一个 DeepSeek Harness（DSH）插件：**打开 DSH 时自动开始计时，关闭时停止**；退出后 3 分钟内重新打开会继续同一次计时。记录每一次使用时长，并在左侧栏页面汇总累计时长。
 
-A DSH plugin that times how long the app stays open — every use and the running total — from a left-sidebar page.
+A DSH plugin that times how long the app stays open — every use and the running total — from a left-sidebar page. Reopening within 3 minutes of closing continues the same use.
 
 ## 功能
 
 - **打开即计时**：插件在页面启动时自动开始本次记录；关闭窗口时结束。
+- **连续计时**：退出后 3 分钟内重新打开，视为同一次使用继续计时，不新增次数；关闭期间的小间断计入该次时长。
 - **每次使用记录**：每次打开的开始时间、结束时间与时长。
 - **汇总**：累计使用时长、打开次数、平均每次。
 - **历史列表**：按天分组，每天显示合计；当前这次实时显示“进行中”。
@@ -52,11 +53,11 @@ Plugins 列表中会出现 **Usage timer / 使用计时**，其详情页会显�
 
 ## 数据与限制
 
-- 记录保存在 DSH Web GUI 源（origin，例如 `http://127.0.0.1:54970`）的 `localStorage` 中，键名为 `dsh-usage-timer.v1`。
+- 记录保存在 DSH 本地存储的 `dsh-usage-timer.v1` 键下。桌面版内嵌页面使用稳定源 `_dsh-app://app`，重启应用不会丢失；通过浏览器访问 Web GUI 时按该页面地址的源保存。
 - 数据结构：`{ version: 1, sessions: [{ id, start, end, lastSeen }] }`，时间为毫秒时间戳，`end` 为 `null` 表示仍在计时。
 - 计时精度：每 5 秒写入一次心跳；正常关闭时立即写入结束时间。崩溃或强制退出时，下次启动会按最后一次心跳时间补上结束点。
 - 已知限制：
-  - 每次页面加载（打开窗口或刷新页面）会记为一次使用。
+  - 关闭后 3 分钟内重新打开会续接同一次计时（间断计入时长）；超过 3 分钟则记为新的使用。
   - 同时打开多个 DSH 窗口时，各窗口分别计时，累计时长可能重复。
   - 窗口没有关闭时（如系统休眠、锁屏），时长仍会继续累计。
   - 最多保留最近 2000 条记录。
@@ -84,6 +85,7 @@ dsh-usage-timer/
 - `client.js` 在 `apply(ctx)` 中：
   - 用 `ctx.locale.register()` 注册界面文案，并 `ctx.locale.bind()` 取翻译函数；
   - 在 `ctx.effect()` 中开启本次使用记录与 5 秒心跳，窗口 `pagehide` / `beforeunload` 与插件清理时收尾；
+  - 启动时若最新一条记录在 3 分钟（`CONTINUITY_GAP_MS`）内结束或仍打开，就续接它，否则新建一条；
   - 向 `sidebar.panellist` 注册左侧栏图标（`id: usage-timer`）；
   - 向 `main` 注册同名 `key` 的主页面，二者由 DSH 面板导航自动关联。
 
