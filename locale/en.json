@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Usage timer",
-    "description": "Times how long DSH stays open, with each use and the running total recorded in a sidebar page."
+    "description": "Times how long DSH stays open, with each use and the running total recorded in a sidebar page; reopening within 3 minutes continues the same use."
   }
 }
