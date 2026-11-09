@@ -35,7 +35,7 @@ A DSH plugin that times how long the app stays open — every use and the runnin
 1. 打开 DSH 左侧栏的 **Plugins**。
 2. 点 **Add plugin**（或箭头菜单里的 **Install a third-party plugin**）。
 3. 在包名字段填入本仓库地址，例如：
-   `https://github.com/<你的账号>/dsh-usage-timer`
+   `https://github.com/CQin04/dsh-usage-timer`
 4. 确认后等待安装完成，插件会自动启用。
 
 ### 方式二：本地目录
