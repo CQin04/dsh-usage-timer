@@ -1,5 +1,8 @@
 # DSH 使用计时 / Usage timer
 
+[DSH 插件导航：插件集合、Playwright MCP、使用计时](https://github.com/CQin04/awesome-dsh-plugin/blob/main/NAVIGATION.md)
+
+
 <p align="center">
   <img src="icon.svg" width="96" height="96" alt="Usage timer icon" />
 </p>
